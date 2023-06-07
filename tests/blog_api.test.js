@@ -3,6 +3,9 @@ const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 const initialBlogs = [
   {
@@ -18,6 +21,8 @@ const initialBlogs = [
     likes: "6"
   },
 ]
+
+
 
 beforeEach(async () => {
   await Blog.deleteMany({})
@@ -48,31 +53,62 @@ describe('GET Blogs', () => {
 })
 
 describe('POST Blogs', () => {
+
     test('new blog is added, and received', async () => {
-        const newBlog = 
+      await User.deleteMany({})
+
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
             {
                 title: "blogi testi!",
                 author: "Juho Siitonen",
                 url: "www.iltalehti.fi",
                 likes: "5",
+                userId: userForToken.id
              }
-        const res = await api
-          .post('/api/blogs')
-          .send(newBlog)
-        newBlog.id = res.body.id
-        expect(res.body.title).toEqual(newBlog.title)
+      const res = await api
+        .post('/api/blogs')
+        .set('Authorization', tokenBearer)
+        .send(newBlog)
+      newBlog.id = res.body.id
+      expect(res.body.title).toEqual(newBlog.title)
     })
 
     test('new blog is added, and counted', async () => {
-        const newBlog = 
+      await User.deleteMany({})
+
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
             {
-                "title": "blogi testi!",
-                "author": "Juho Siitonen",
-                "url": "www.iltalehti.fi",
-                "likes": "5"
-             }
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                url: "www.iltalehti.fi",
+                likes: "5",
+                userId: userForToken.id
+             }  
         const res = await api
           .post('/api/blogs')
+          .set('Authorization', tokenBearer)
           .send(newBlog)
         
         const allBlogs = await api.get('/api/blogs')
@@ -80,53 +116,170 @@ describe('POST Blogs', () => {
     })
 
     test('new blog doesnt have likes', async () => {
-        const newBlog = 
+      await User.deleteMany({})
+
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
             {
-                "title": "blogi testi!",
-                "author": "Juho Siitonen",
-                "url": "www.iltalehti.fi",
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                url: "www.iltalehti.fi",
+                userId: userForToken.id
              }
         const res = await api
           .post('/api/blogs')
+          .set('Authorization', tokenBearer)
           .send(newBlog)
         expect(res.body.likes).toEqual(0)
     })
 
     test('new blog doesnt have title', async () => {
-        const newBlog = 
+      await User.deleteMany({})
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
             {
-                "author": "Juho Siitonen",
-                "url": "www.iltalehti.fi",
-            }
+                author: "Juho Siitonen",
+                url: "www.iltalehti.fi",
+                likes: "5",
+                userId: userForToken.id
+             }
         await api
           .post('/api/blogs')
+          .set('Authorization', tokenBearer)
           .send(newBlog)
           .expect(400)
     })
 
     test('new blog doesnt have url', async () => {
-        const newBlog = 
+      await User.deleteMany({})
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
             {
-                "title": "blogi testi!",
-                "author": "Juho Siitonen",
-            }
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                likes: "5",
+                userId: userForToken.id
+             }
+        await api
+            .post('/api/blogs')
+            .set('Authorization', tokenBearer)
+            .send(newBlog)
+            .expect(400)
+    })
+    test('new blog doesnt have token', async () => {
+      await User.deleteMany({})
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
+            {
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                url: "testisivu.fi",
+                likes: "5",
+                userId: userForToken.id
+             }
         await api
             .post('/api/blogs')
             .send(newBlog)
-            .expect(400)
+            .expect(401)
     })
 })
 
 describe('DELETE tests', () => {
     test('deletion returns status 204', async () => {
+      await User.deleteMany({})
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
+            {
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                url: "www.iltalehti.fi",
+                likes: "5",
+                userId: userForToken.id
+             }
+        await Blog.deleteMany({})
+        await api
+             .post('/api/blogs')
+             .set('Authorization', tokenBearer)
+             .send(newBlog)
         const allBlogs = await api.get('/api/blogs')
         const idToDelete = allBlogs.body[0].id
         await api
           .delete(`/api/blogs/${idToDelete}`)
+          .set('Authorization', tokenBearer)
           .expect(204)
     })
 
     test('deletion actually removes one blog', async () => {
+      await User.deleteMany({})
+      const passwordHash = await bcrypt.hash('password', 10)
+      const user = new User({ username: 'root', name: 'testi', passwordHash })
+      await user.save()
+      const testUser = await User.findOne(user)
+      const userForToken = {
+        username: testUser.username,
+        id: testUser._id,
+      }
+      const token = jwt.sign(userForToken, process.env.SECRET)
+      const tokenBearer = 'Bearer ' + token
+      const newBlog = 
+            {
+                title: "blogi testi!",
+                author: "Juho Siitonen",
+                url: "www.iltalehti.fi",
+                likes: "5",
+                userId: userForToken.id
+             }
+        await Blog.deleteMany({})
+        await api
+             .post('/api/blogs')
+             .set('Authorization', tokenBearer)
+             .send(newBlog)  
         const allBlogs = await api.get('/api/blogs')
         const idToDelete = allBlogs.body[0].id
         await api
